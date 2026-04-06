@@ -1,0 +1,23 @@
+FROM python:3.11-slim
+
+# Install system deps
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential git curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install hermes-agent
+RUN pip install --no-cache-dir hermes-agent
+
+# Create non-root user
+RUN useradd -m -s /bin/bash hermes
+USER hermes
+WORKDIR /home/hermes
+
+# Expose webhook port
+EXPOSE 8644
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8644/health || exit 1
+
+CMD ["hermes", "webhook", "--host", "0.0.0.0", "--port", "8644"]

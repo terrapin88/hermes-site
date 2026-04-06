@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hermes — Your Personal AI Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ===== RESET & BASE ===== */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --cream: #f5f1eb;
+  --cream-light: #faf8f4;
+  --gold: #b8960c;
+  --gold-light: #d4af37;
+  --gold-pale: #e8d48b;
+  --gold-faint: rgba(184, 150, 12, 0.12);
+  --text-dark: #2c2418;
+  --text-mid: #5a4e3c;
+  --text-light: #8a7e6c;
+  --stone-border: #c9bfa8;
+  --marble-vein: rgba(190, 178, 158, 0.18);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', sans-serif;
+  color: var(--text-dark);
+  line-height: 1.7;
+  font-size: 16px;
+  /* Marble texture background */
+  background-color: var(--cream);
+  background-image:
+    /* Subtle diagonal veining */
+    linear-gradient(135deg, transparent 40%, var(--marble-vein) 41%, var(--marble-vein) 41.5%, transparent 42%),
+    linear-gradient(225deg, transparent 55%, rgba(200, 190, 170, 0.1) 55.5%, rgba(200, 190, 170, 0.1) 56%, transparent 56.5%),
+    linear-gradient(160deg, transparent 30%, rgba(180, 168, 148, 0.08) 30.5%, rgba(180, 168, 148, 0.08) 31%, transparent 31.5%),
+    linear-gradient(200deg, transparent 65%, rgba(195, 182, 162, 0.12) 65.5%, rgba(195, 182, 162, 0.12) 66%, transparent 66.5%),
+    linear-gradient(145deg, transparent 20%, rgba(188, 175, 155, 0.06) 20.5%, rgba(188, 175, 155, 0.06) 21.5%, transparent 22%),
+    /* Warm radial warmth */
+    radial-gradient(ellipse at 20% 50%, rgba(216, 200, 170, 0.15) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 30%, rgba(210, 195, 165, 0.1) 0%, transparent 50%);
+  background-size: 100% 100%;
+  background-attachment: fixed;
+  overflow-x: hidden;
+}
+
+/* ===== GREEK KEY PATTERN (CSS-only) ===== */
+.greek-key {
+  height: 12px;
+  width: 100%;
+  background:
+    linear-gradient(90deg, var(--gold-light) 25%, transparent 25%) 0 0 / 12px 3px repeat-x,
+    linear-gradient(90deg, transparent 75%, var(--gold-light) 75%) 0 9px / 12px 3px repeat-x,
+    linear-gradient(0deg, var(--gold-light) 25%, transparent 25%) 0 0 / 3px 12px repeat-x,
+    linear-gradient(0deg, transparent 75%, var(--gold-light) 75%) 9px 0 / 3px 12px repeat-x,
+    linear-gradient(90deg, var(--gold-light) 25%, transparent 25%) 6px 6px / 12px 3px repeat-x,
+    linear-gradient(0deg, transparent 75%, var(--gold-light) 75%) 3px 6px / 3px 12px repeat-x;
+  opacity: 0.35;
+  margin: 0 auto;
+  max-width: 800px;
+}
+
+/* ===== COLUMN MOTIFS ===== */
+.column-wrapper {
+  position: relative;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 40px;
+}
+
+.column-wrapper::before,
+.column-wrapper::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: linear-gradient(to bottom, transparent, var(--gold-pale), var(--gold-light), var(--gold-pale), transparent);
+  opacity: 0.4;
+}
+.column-wrapper::before { left: 8px; box-shadow: 3px 0 0 rgba(212, 175, 55, 0.15); }
+.column-wrapper::after { right: 8px; box-shadow: -3px 0 0 rgba(212, 175, 55, 0.15); }
+
+/* ===== SECTION ORNAMENT DIVIDER ===== */
+.ornament {
+  text-align: center;
+  color: var(--gold-light);
+  font-size: 14px;
+  letter-spacing: 0.3em;
+  margin-bottom: 12px;
+  opacity: 0.7;
+  user-select: none;
+}
+.ornament::before { content: '◆━━━━━━━◆'; }
+
+/* ===== CADUCEUS SVG MOTIF ===== */
+.caduceus-motif {
+  display: block;
+  margin: 0 auto 20px;
+  opacity: 0.3;
+}
+
+/* ===== NAVIGATION ===== */
+nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  padding: 18px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(245, 241, 235, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(184, 150, 12, 0.15);
+}
+
+nav .logo {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 700;
+  font-size: 1.6rem;
+  color: var(--gold);
+  text-decoration: none;
+  letter-spacing: 0.05em;
+}
+
+nav .nav-links {
+  display: flex;
+  gap: 32px;
+  list-style: none;
+}
+
+nav .nav-links a {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--text-mid);
+  text-decoration: none;
+  letter-spacing: 0.04em;
+  transition: color 0.3s;
+}
+
+nav .nav-links a:hover { color: var(--gold); }
+
+/* ===== HERO ===== */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 120px 24px 80px;
+  position: relative;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -55%);
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(212, 175, 55, 0.1) 0%, rgba(212, 175, 55, 0.03) 40%, transparent 70%);
+  pointer-events: none;
+}
+
+.hero-content { position: relative; max-width: 700px; }
+
+.hero h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 700;
+  font-size: clamp(3.2rem, 7vw, 5.5rem);
+  color: var(--gold);
+  letter-spacing: 0.1em;
+  line-height: 1.1;
+  margin-bottom: 24px;
+  text-shadow: 0 2px 30px rgba(212, 175, 55, 0.15);
+}
+
+.hero .tagline {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 500;
+  font-size: clamp(1.2rem, 2.5vw, 1.55rem);
+  color: var(--text-dark);
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.hero .description {
+  font-size: 1.05rem;
+  color: var(--text-mid);
+  max-width: 540px;
+  margin: 0 auto 36px;
+  line-height: 1.8;
+}
+
+.btn-primary {
+  display: inline-block;
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 700;
+  font-size: 1.1rem;
+  letter-spacing: 0.06em;
+  color: var(--cream-light);
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+  border: none;
+  padding: 16px 44px;
+  border-radius: 4px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.3s;
+  box-shadow: 0 4px 20px rgba(184, 150, 12, 0.25), inset 0 1px 0 rgba(255,255,255,0.2);
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 28px rgba(184, 150, 12, 0.35), inset 0 1px 0 rgba(255,255,255,0.2);
+}
+
+.hero .learn-more {
+  display: block;
+  margin-top: 40px;
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--text-light);
+  text-decoration: none;
+  letter-spacing: 0.05em;
+  transition: color 0.3s;
+}
+.hero .learn-more:hover { color: var(--gold); }
+
+/* Small winged sandal above hero title */
+.winged-sandal {
+  display: block;
+  margin: 0 auto 18px;
+  opacity: 0.35;
+}
+
+/* ===== SECTION COMMON ===== */
+section {
+  padding: 90px 24px;
+  position: relative;
+}
+
+.section-label {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 600;
+  font-size: 0.85rem;
+  letter-spacing: 0.35em;
+  color: var(--gold);
+  text-transform: uppercase;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.section-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 700;
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  color: var(--text-dark);
+  text-align: center;
+  margin-bottom: 50px;
+  line-height: 1.2;
+}
+
+/* ===== FEATURES CARDS ===== */
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 28px;
+  max-width: 880px;
+  margin: 0 auto;
+}
+
+.feature-card {
+  position: relative;
+  padding: 36px 30px 30px;
+  border: 1.5px solid var(--stone-border);
+  border-radius: 6px;
+  /* Stone/marble card texture */
+  background:
+    linear-gradient(160deg, rgba(230, 222, 210, 0.3) 0%, transparent 40%),
+    linear-gradient(320deg, rgba(220, 212, 198, 0.2) 0%, transparent 35%),
+    linear-gradient(to bottom, var(--cream-light), #f2ede5);
+  box-shadow: 0 2px 12px rgba(90, 78, 60, 0.06), inset 0 1px 0 rgba(255,255,255,0.7);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.feature-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 30px rgba(90, 78, 60, 0.1), inset 0 1px 0 rgba(255,255,255,0.7);
+}
+
+/* Tiny classical ornament at top of each card */
+.feature-card::before {
+  content: '❧';
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 18px;
+  color: var(--gold-light);
+  background: var(--cream);
+  padding: 0 10px;
+  opacity: 0.6;
+}
+
+.feature-card h3 {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 700;
+  font-size: 1.3rem;
+  color: var(--text-dark);
+  margin-bottom: 10px;
+  letter-spacing: 0.02em;
+}
+
+.feature-card p {
+  font-size: 0.95rem;
+  color: var(--text-mid);
+  line-height: 1.7;
+}
+
+/* ===== STEPS ===== */
+.steps-container {
+  display: flex;
+  gap: 40px;
+  max-width: 880px;
+  margin: 0 auto;
+  justify-content: center;
+}
+
+.step {
+  flex: 1;
+  text-align: center;
+  max-width: 260px;
+}
+
+.step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 700;
+  font-size: 1.5rem;
+  color: var(--gold);
+  /* Carved-into-stone effect */
+  background: linear-gradient(145deg, #ede8df, #ddd7cc);
+  border: 2px solid var(--stone-border);
+  box-shadow:
+    inset 2px 2px 4px rgba(0,0,0,0.1),
+    inset -1px -1px 3px rgba(255,255,255,0.6),
+    0 2px 6px rgba(90, 78, 60, 0.1);
+  margin-bottom: 18px;
+}
+
+.step h3 {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: var(--text-dark);
+  margin-bottom: 8px;
+  letter-spacing: 0.02em;
+}
+
+.step p {
+  font-size: 0.95rem;
+  color: var(--text-mid);
+  line-height: 1.7;
+}
+
+/* ===== FOOTER ===== */
+footer {
+  padding: 40px 24px 36px;
+  text-align: center;
+  color: var(--text-light);
+  font-size: 0.9rem;
+}
+
+footer a {
+  color: var(--gold);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s;
+}
+footer a:hover { color: var(--gold-light); }
+
+footer .footer-links {
+  display: flex;
+  justify-content: center;
+  gap: 28px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+footer .footer-note {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 1rem;
+  color: var(--text-light);
+  margin-top: 10px;
+}
+
+/* ===== FLOATING CHAT FAB (Gold Coin) ===== */
+#chat-fab-btn {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 200;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 2.5px solid var(--gold-light);
+  background: linear-gradient(145deg, #dbb42c, #b8960c);
+  color: var(--cream-light);
+  font-size: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 4px 20px rgba(184, 150, 12, 0.35),
+    inset 0 2px 4px rgba(255, 255, 255, 0.3),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.15),
+    0 0 0 3px rgba(184, 150, 12, 0.1);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+#chat-fab-btn:hover {
+  transform: scale(1.08);
+  box-shadow:
+    0 6px 28px rgba(184, 150, 12, 0.45),
+    inset 0 2px 4px rgba(255, 255, 255, 0.3),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.15),
+    0 0 0 5px rgba(184, 150, 12, 0.12);
+}
+
+#chat-fab-btn svg { filter: drop-shadow(0 1px 1px rgba(0,0,0,0.2)); }
+
+/* ===== SCROLL REVEAL ===== */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  nav { padding: 14px 20px; }
+  nav .logo { font-size: 1.3rem; }
+  nav .nav-links { gap: 20px; }
+  nav .nav-links a { font-size: 0.9rem; }
+
+  .column-wrapper { padding: 0 20px; }
+  .column-wrapper::before, .column-wrapper::after { display: none; }
+
+  section { padding: 60px 16px; }
+
+  .features-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    max-width: 480px;
+  }
+
+  .steps-container {
+    flex-direction: column;
+    align-items: center;
+    gap: 32px;
+  }
+
+  .hero { padding: 100px 20px 60px; }
+  .hero h1 { letter-spacing: 0.06em; }
+
+  #chat-fab-btn { width: 52px; height: 52px; font-size: 20px; bottom: 20px; right: 20px; }
+}
+
+@media (max-width: 480px) {
+  .hero h1 { font-size: 2.6rem; }
+  .btn-primary { padding: 14px 32px; font-size: 1rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAVIGATION -->
+<nav>
+  <a href="#" class="logo">Hermes</a>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="https://github.com/nousresearch/hermes" target="_blank" rel="noopener">GitHub</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-content">
+    <!-- Winged sandal SVG motif -->
+    <svg class="winged-sandal" width="48" height="32" viewBox="0 0 48 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M24 28c-4-2-7-6-8-11M24 28c4-2 7-6 8-11" stroke="#d4af37" stroke-width="1.2" stroke-linecap="round"/>
+      <path d="M14 17c-5-2-10-1-13 2M14 17c-1-5 0-10 3-13" stroke="#d4af37" stroke-width="1" stroke-linecap="round" opacity="0.7"/>
+      <path d="M34 17c5-2 10-1 13 2M34 17c1-5 0-10-3-13" stroke="#d4af37" stroke-width="1" stroke-linecap="round" opacity="0.7"/>
+      <ellipse cx="24" cy="29" rx="5" ry="2" stroke="#d4af37" stroke-width="1" opacity="0.5"/>
+      <!-- Small wing feathers -->
+      <path d="M10 16c-3-1-6 0-8 2" stroke="#d4af37" stroke-width="0.8" stroke-linecap="round" opacity="0.5"/>
+      <path d="M38 16c3-1 6 0 8 2" stroke="#d4af37" stroke-width="0.8" stroke-linecap="round" opacity="0.5"/>
+    </svg>
+
+    <h1 class="reveal">Meet Hermes</h1>
+    <p class="tagline reveal">Your personal AI assistant that actually gets things done.</p>
+    <p class="description reveal">Hermes lives on your computer, learns how you work, and takes care of the busy work — so you can focus on what matters.</p>
+    <button class="btn-primary reveal" id="hero-chat-btn">Chat with Hermes</button>
+    <a href="#features" class="learn-more reveal">Learn more ↓</a>
+  </div>
+</section>
+
+<!-- Greek Key Divider -->
+<div class="greek-key"></div>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="column-wrapper">
+    <div class="ornament"></div>
+    <p class="section-label reveal">What Hermes Does</p>
+    <h2 class="section-title reveal">Simple tools, real results</h2>
+    <div class="features-grid">
+      <div class="feature-card reveal">
+        <h3>Find answers fast</h3>
+        <p>Ask anything and get real answers. Hermes searches the web, reads documents, and brings back what you need.</p>
+      </div>
+      <div class="feature-card reveal">
+        <h3>Automate your routine</h3>
+        <p>Set reminders, schedule check-ins, and let Hermes handle repetitive tasks in the background.</p>
+      </div>
+      <div class="feature-card reveal">
+        <h3>Chat from anywhere</h3>
+        <p>Message Hermes from Telegram, Discord, WhatsApp, or Slack — wherever feels natural to you.</p>
+      </div>
+      <div class="feature-card reveal">
+        <h3>Gets smarter over time</h3>
+        <p>Hermes remembers your preferences and learns from every conversation. The more you use it, the better it gets.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Greek Key Divider -->
+<div class="greek-key"></div>
+
+<!-- STEPS -->
+<section id="get-started">
+  <div class="column-wrapper">
+    <div class="ornament"></div>
+    <p class="section-label reveal">Get Started</p>
+    <h2 class="section-title reveal">Up and running in three steps</h2>
+    <div class="steps-container">
+      <div class="step reveal">
+        <div class="step-number">1</div>
+        <h3>Install</h3>
+        <p>Quick setup on your Mac or PC. Takes about five minutes.</p>
+      </div>
+      <div class="step reveal">
+        <div class="step-number">2</div>
+        <h3>Connect</h3>
+        <p>Link your favorite messaging app so Hermes can reach you.</p>
+      </div>
+      <div class="step reveal">
+        <div class="step-number">3</div>
+        <h3>Start chatting</h3>
+        <p>That's it. Just talk to Hermes and let it handle the rest.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Greek Key Divider above footer -->
+<div class="greek-key"></div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-links">
+    <a href="https://nousresearch.com" target="_blank" rel="noopener">Powered by Nous Research</a>
+    <a href="https://github.com/nousresearch/hermes" target="_blank" rel="noopener">GitHub</a>
+    <span>Free and open source</span>
+  </div>
+  <p class="footer-note">Built for everyone.</p>
+</footer>
+
+<!-- FLOATING CHAT FAB (Gold Coin) -->
+<button id="chat-fab-btn" aria-label="Chat with Hermes">
+  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+  </svg>
+</button>
+
+<!-- Chat Widget -->
+<script src="js/chat-widget.js"></script>
+<script>
+  // Chat widget initialization
+  const fab = document.getElementById('chat-fab-btn');
+  const heroChatBtn = document.getElementById('hero-chat-btn');
+  if (typeof HermesChat !== 'undefined') {
+    HermesChat.init({ endpoint: '/api/webhook' });
+    fab.addEventListener('click', () => HermesChat.toggle());
+    heroChatBtn.addEventListener('click', () => HermesChat.open());
+  }
+
+  // Scroll reveal with IntersectionObserver
+  document.addEventListener('DOMContentLoaded', () => {
+    const reveals = document.querySelectorAll('.reveal');
+    if ('IntersectionObserver' in window) {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+      reveals.forEach((el) => observer.observe(el));
+    } else {
+      reveals.forEach((el) => el.classList.add('visible'));
+    }
+  });
+</script>
+
+<!-- Privacy-friendly analytics (no cookies, no PII, no fingerprinting) -->
+<script>
+(function() {
+  'use strict';
+  var ENDPOINT = '/api/analytics';
+  var sent = {};
+
+  // Session ID: fresh UUID per visit, sessionStorage only
+  function getSessionId() {
+    var id = sessionStorage.getItem('_ha_sid');
+    if (!id) {
+      id = crypto.randomUUID ? crypto.randomUUID() :
+        'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+          var r = Math.random() * 16 | 0;
+          return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+        });
+      sessionStorage.setItem('_ha_sid', id);
+    }
+    return id;
+  }
+
+  function send(event, data) {
+    // Deduplicate: only send each event type once per session
+    if (sent[event]) return;
+    sent[event] = true;
+
+    var payload = JSON.stringify(Object.assign({
+      event: event,
+      sid: getSessionId(),
+      ts: Date.now(),
+      path: location.pathname,
+      ref: document.referrer || '',
+      sw: screen.width,
+      sh: screen.height
+    }, data || {}));
+
+    try {
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon(ENDPOINT, new Blob([payload], { type: 'application/json' }));
+      } else {
+        fetch(ENDPOINT, { method: 'POST', body: payload, headers: { 'Content-Type': 'application/json' }, keepalive: true });
+      }
+    } catch (e) { /* fail silently */ }
+  }
+
+  // Pageview on load (deduplicated via sent map)
+  if (document.readyState === 'complete') {
+    send('pageview');
+  } else {
+    window.addEventListener('load', function() { send('pageview'); });
+  }
+
+  // Chat opened event — hook into HermesChat.toggle/open
+  if (typeof HermesChat !== 'undefined') {
+    var origToggle = HermesChat.toggle;
+    var origOpen = HermesChat.open;
+    HermesChat.toggle = function() { send('chat_opened'); return origToggle.apply(this, arguments); };
+    HermesChat.open = function() { send('chat_opened'); return origOpen.apply(this, arguments); };
+  }
+
+  // Chat first message — listen for form submit inside chat widget
+  document.addEventListener('submit', function(e) {
+    if (e.target && e.target.closest && e.target.closest('#hermes-chat')) {
+      send('chat_message');
+    }
+  }, true);
+  // Also catch Enter key sends in chat input
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && e.target && e.target.closest && e.target.closest('#hermes-chat')) {
+      send('chat_message');
+    }
+  }, true);
+})();
+</script>
+
+</body>
+</html>
