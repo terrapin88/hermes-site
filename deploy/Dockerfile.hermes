@@ -1,27 +1,23 @@
 FROM python:3.11-slim
 
-# Install system deps
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential git curl \
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install hermes-agent from GitHub
-RUN pip install --no-cache-dir "hermes-agent @ git+https://github.com/NousResearch/hermes-agent.git"
+# Install just the deps we need (no hermes-agent, no gateway)
+RUN pip install --no-cache-dir flask openai gunicorn
 
 # Create non-root user
 RUN useradd -m -s /bin/bash hermes
 USER hermes
 WORKDIR /home/hermes
 
-# Create minimal hermes config
-RUN mkdir -p /home/hermes/.hermes
+# Copy server and prompt
+COPY --chown=hermes:hermes webhook_server.py /home/hermes/webhook_server.py
 COPY --chown=hermes:hermes concierge-prompt.md /home/hermes/.hermes/concierge-prompt.md
 
-# Expose gateway port
 EXPOSE 8644
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:8644/health || exit 1
 
-# Run the gateway with webhook enabled
-CMD ["hermes", "gateway", "run"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8644", "--workers", "2", "--timeout", "120", "webhook_server:app"]
