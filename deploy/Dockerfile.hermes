@@ -5,19 +5,23 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential git curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install hermes-agent
-RUN pip install --no-cache-dir hermes-agent
+# Install hermes-agent from GitHub
+RUN pip install --no-cache-dir "hermes-agent @ git+https://github.com/NousResearch/hermes-agent.git"
 
 # Create non-root user
 RUN useradd -m -s /bin/bash hermes
 USER hermes
 WORKDIR /home/hermes
 
-# Expose webhook port
+# Create minimal hermes config
+RUN mkdir -p /home/hermes/.hermes
+COPY --chown=hermes:hermes concierge-prompt.md /home/hermes/.hermes/concierge-prompt.md
+
+# Expose gateway port
 EXPOSE 8644
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
     CMD curl -f http://localhost:8644/health || exit 1
 
-CMD ["hermes", "webhook", "--host", "0.0.0.0", "--port", "8644"]
+# Run the gateway with webhook enabled
+CMD ["hermes", "gateway", "run"]
