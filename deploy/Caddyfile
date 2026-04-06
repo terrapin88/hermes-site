@@ -1,4 +1,4 @@
-{$DOMAIN:localhost} {
+:80 {
     # Serve static site files
     root * /srv/site
     file_server
