@@ -4,7 +4,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Install just the deps we need (no hermes-agent, no gateway)
-RUN pip install --no-cache-dir flask openai gunicorn
+RUN pip install --no-cache-dir flask openai anthropic gunicorn
 
 # Create non-root user
 RUN useradd -m -s /bin/bash hermes

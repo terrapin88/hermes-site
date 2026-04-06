@@ -13,6 +13,7 @@ import time
 import threading
 from flask import Flask, request, jsonify
 
+import anthropic
 from openai import OpenAI
 from pathlib import Path
 
@@ -22,49 +23,33 @@ app = Flask(__name__)
 SYSTEM_PROMPT_PATH = os.environ.get(
     "CONCIERGE_PROMPT", "/home/hermes/.hermes/concierge-prompt.md"
 )
-MODEL = os.environ.get("HERMES_MODEL", "claude-opus-4-6")
+MODEL = os.environ.get("HERMES_MODEL", "") or "claude-opus-4-6"
 PROVIDER = os.environ.get("HERMES_PROVIDER", "anthropic")
 MAX_HISTORY = 40  # max messages per session to keep
 
-# Provider → base URL mapping
-PROVIDER_URLS = {
-    "anthropic": "https://api.anthropic.com/v1/",
-    "nous": "https://inference-api.nousresearch.com/v1",
-    "openai": "https://api.openai.com/v1",
-    "openrouter": "https://openrouter.ai/api/v1",
-}
 
-# Provider → env var for API key
-PROVIDER_KEYS = {
-    "anthropic": "ANTHROPIC_API_KEY",
-    "nous": "NOUS_API_KEY",
-    "openai": "OPENAI_API_KEY",
-    "openrouter": "OPENROUTER_API_KEY",
-}
+def get_provider_and_key():
+    """Determine which provider and API key to use."""
+    provider_key_map = {
+        "anthropic": "ANTHROPIC_API_KEY",
+        "nous": "NOUS_API_KEY",
+        "openai": "OPENAI_API_KEY",
+        "openrouter": "OPENROUTER_API_KEY",
+    }
 
-
-def get_client():
-    """Create OpenAI-compatible client for the configured provider."""
-    base_url = PROVIDER_URLS.get(PROVIDER, PROVIDER_URLS["anthropic"])
-    key_env = PROVIDER_KEYS.get(PROVIDER, "ANTHROPIC_API_KEY")
+    # Try configured provider first
+    key_env = provider_key_map.get(PROVIDER, "ANTHROPIC_API_KEY")
     api_key = os.environ.get(key_env, "")
+    if api_key:
+        return PROVIDER, api_key
 
-    if not api_key:
-        # Try all keys as fallback
-        for env_var in ["ANTHROPIC_API_KEY", "NOUS_API_KEY", "OPENAI_API_KEY"]:
-            api_key = os.environ.get(env_var, "")
-            if api_key:
-                # Update base_url to match the found key
-                for prov, kenv in PROVIDER_KEYS.items():
-                    if kenv == env_var:
-                        base_url = PROVIDER_URLS[prov]
-                        break
-                break
+    # Fallback: try all providers
+    for prov, env_var in provider_key_map.items():
+        api_key = os.environ.get(env_var, "")
+        if api_key:
+            return prov, api_key
 
-    if not api_key:
-        raise RuntimeError("No API key found. Set ANTHROPIC_API_KEY, NOUS_API_KEY, or OPENAI_API_KEY.")
-
-    return OpenAI(base_url=base_url, api_key=api_key)
+    raise RuntimeError("No API key found. Set ANTHROPIC_API_KEY, NOUS_API_KEY, or OPENAI_API_KEY.")
 
 
 def load_system_prompt():
@@ -133,14 +118,38 @@ def webhook():
 
     # Call LLM
     try:
-        client = get_client()
-        response = client.chat.completions.create(
-            model=MODEL,
-            messages=full_messages,
-            max_tokens=2048,
-            temperature=0.7,
-        )
-        assistant_content = response.choices[0].message.content
+        provider, api_key = get_provider_and_key()
+
+        if provider == "anthropic":
+            client = anthropic.Anthropic(api_key=api_key)
+            # Anthropic wants system prompt separate, not in messages
+            chat_messages = [m for m in full_messages if m["role"] != "system"]
+            response = client.messages.create(
+                model=MODEL,
+                system=load_system_prompt(),
+                messages=chat_messages,
+                max_tokens=2048,
+                temperature=0.7,
+            )
+            assistant_content = response.content[0].text
+        else:
+            # OpenAI-compatible providers (nous, openai, openrouter)
+            base_urls = {
+                "nous": "https://inference-api.nousresearch.com/v1",
+                "openai": "https://api.openai.com/v1",
+                "openrouter": "https://openrouter.ai/api/v1",
+            }
+            client = OpenAI(
+                base_url=base_urls.get(provider, base_urls["openai"]),
+                api_key=api_key,
+            )
+            response = client.chat.completions.create(
+                model=MODEL,
+                messages=full_messages,
+                max_tokens=2048,
+                temperature=0.7,
+            )
+            assistant_content = response.choices[0].message.content
     except Exception as e:
         app.logger.error(f"LLM error: {e}")
         assistant_content = "I'm having a moment — could you try again in a few seconds?"
