@@ -24,7 +24,7 @@ SYSTEM_PROMPT_PATH = os.environ.get(
     "CONCIERGE_PROMPT", "/home/hermes/.hermes/concierge-prompt.md"
 )
 MODEL = os.environ.get("HERMES_MODEL", "") or "claude-opus-4-6"
-PROVIDER = os.environ.get("HERMES_PROVIDER", "anthropic")
+PROVIDER = os.environ.get("HERMES_PROVIDER", "") or "anthropic"
 MAX_HISTORY = 40  # max messages per session to keep
 
 
