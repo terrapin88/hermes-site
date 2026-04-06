@@ -25,8 +25,15 @@ logger = logging.getLogger(__name__)
 
 # ── Configuration ────────────────────────────────────────────
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
-MODEL = os.environ.get("HERMES_MODEL", "") or "claude-opus-4-6"
+_raw_model = os.environ.get("HERMES_MODEL", "")
+# Default model based on provider
+_default_models = {
+    "anthropic": "claude-opus-4-6",
+    "nous": "NousResearch/Hermes-4-70B",
+    "openai": "gpt-4o",
+}
 PROVIDER = os.environ.get("HERMES_PROVIDER", "") or "anthropic"
+MODEL = _raw_model or _default_models.get(PROVIDER, "NousResearch/Hermes-4-70B")
 MAX_HISTORY = 30
 SYSTEM_PROMPT_PATH = os.environ.get(
     "CONCIERGE_PROMPT", "/app/concierge-prompt.md"
