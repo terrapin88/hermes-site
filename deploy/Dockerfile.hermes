@@ -3,21 +3,14 @@ FROM python:3.11-slim
 RUN apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install just the deps we need (no hermes-agent, no gateway)
-RUN pip install --no-cache-dir flask openai anthropic gunicorn
+RUN pip install --no-cache-dir python-telegram-bot anthropic openai
 
-# Create non-root user
-RUN useradd -m -s /bin/bash hermes
-USER hermes
-WORKDIR /home/hermes
+WORKDIR /app
 
-# Copy server and prompt
-COPY --chown=hermes:hermes webhook_server.py /home/hermes/webhook_server.py
-COPY --chown=hermes:hermes concierge-prompt.md /home/hermes/.hermes/concierge-prompt.md
+COPY telegram_bot.py /app/telegram_bot.py
+COPY concierge-prompt.md /app/concierge-prompt.md
 
-EXPOSE 8644
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+    CMD python -c "print('ok')" || exit 1
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:8644/health || exit 1
-
-CMD ["gunicorn", "--bind", "0.0.0.0:8644", "--workers", "2", "--timeout", "120", "webhook_server:app"]
+CMD ["python", "telegram_bot.py"]

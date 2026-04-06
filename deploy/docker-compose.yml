@@ -4,35 +4,21 @@ services:
     restart: unless-stopped
     ports:
       - "80:80"
-      - "443:443"
-      - "443:443/udp"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - ./concierge-prompt.md:/srv/concierge-prompt.md:ro
       - ../index.html:/srv/site/index.html:ro
-      - ../js:/srv/site/js:ro
       - caddy_data:/data
       - caddy_config:/config
-    environment:
-      - DOMAIN=${DOMAIN:-localhost}
     networks:
       - web
-    depends_on:
-      hermes:
-        condition: service_healthy
 
   hermes:
     build:
       context: .
       dockerfile: Dockerfile.hermes
     restart: unless-stopped
-    expose:
-      - "8644"
     env_file:
       - .env
-    environment:
-      - HERMES_MODEL=${HERMES_MODEL:-}
-      - HERMES_PROVIDER=${HERMES_PROVIDER:-}
     networks:
       - web
 
