@@ -8,6 +8,7 @@ Uses the concierge system prompt for personality.
 
 import os
 import logging
+import re
 import time
 import threading
 from pathlib import Path
@@ -123,7 +124,30 @@ def call_llm(chat_messages):
             max_tokens=2048,
             temperature=0.7,
         )
-        return response.choices[0].message.content
+        raw_content = response.choices[0].message.content
+
+        # Handle mixed content (text + tool_use blocks) — extract text only
+        if isinstance(raw_content, list):
+            text_parts = [block.text if hasattr(block, "text") else str(block) for block in raw_content]
+            raw_content = "\n".join(text_parts)
+
+        # Strip embedded tool_use JSON artifacts the model may have emitted
+        try:
+            # Remove any JSON objects with "type": "tool_use" embedded in text
+            cleaned = re.sub(
+                r'\{\s*"type"\s*:\s*"tool_use"[^{}]*(?:\{[^{}]*\}[^{}]*)*\}',
+                "",
+                raw_content,
+                flags=re.DOTALL
+            )
+            # Remove leftover tool_call_id / tool_call_name fragments
+            cleaned = re.sub(r'"(?:tool_call_id|tool_call_name|input)"\s*:\s*"[^"]*"', "", cleaned)
+            cleaned = re.sub(r'"(?:tool_call_id|tool_call_name|input)"\s*:\s*\{[^}]*\}', "", cleaned)
+            raw_content = cleaned.strip()
+        except Exception:
+            pass  # Fall back to raw content if cleanup fails
+
+        return raw_content
 
 
 # ── Telegram Handlers ────────────────────────────────────────
